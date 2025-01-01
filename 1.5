@@ -71,7 +71,7 @@ END {
 
 # Φιλτράρισμα διασωθέντων
 echo "Δημιουργία αρχείου διασωθέντων..."
-grep ";Yes$" "$INPUT_FILE" > "$RESCUED_FILE"
+grep -n ";Yes$" "$INPUT_FILE" > "$RESCUED_FILE"
 
 # Μήνυμα ολοκλήρωσης
 echo "Οι αναφορές δημιουργήθηκαν!"
