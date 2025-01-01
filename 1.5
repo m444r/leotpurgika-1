@@ -1,82 +1,82 @@
 #!/bin/bash
 
-# Συνάρτηση: Κατηγοριοποίηση ηλικιακών ομάδων
-generate_age_groups() {
-  local input_file="passengers.csv"
-  local output_file="ages.txt"
+# Έλεγχος παραμέτρων
+if [[ "$1" != "reports" ]]; then
+    echo "Χρήση: ./processes_ipc reports"
+    exit 1
+fi
 
-  awk -F';' '
-  BEGIN {
-    print "Ηλικιακές ομάδες:" > "'$output_file'"
-    print "-----------------" >> "'$output_file'"
-  }
-  {
-    if ($3 <= 18) 
-      group="0-18";
-    else if ($3 <= 35) 
-      group="19-35";
-    else if ($3 <= 50) 
-      group="36-50";
-    else 
-      group="51+";
+# Αρχεία Εξόδου
+AGE_GROUP_FILE="ages.txt"
+PERCENTAGE_FILE="percentages.txt"
+AVERAGE_FILE="avg.txt"
+RESCUED_FILE="rescued.txt"
+INPUT_FILE="passengers_data.csv"
 
-    print $2 " (Ηλικία: " $3 ") -> Ομάδα: " group >> "'$output_file'"
-  }' "$input_file"
+# Έλεγχος αν υπάρχει το αρχείο εισόδου
+if [[ ! -f "$INPUT_FILE" ]]; then
+    echo "Το αρχείο $INPUT_FILE δεν βρέθηκε!"
+    exit 1
+fi
+
+# Δημιουργία ηλικιακών ομάδων
+echo "Δημιουργία αρχείου ηλικιακών ομάδων..."
+awk -F';' '
+BEGIN {
+    print "Ηλικιακές ομάδες:" > "'$AGE_GROUP_FILE'"
+    print "-----------------" >> "'$AGE_GROUP_FILE'"
 }
+{
+    if ($3 <= 18)
+        group = "0-18";
+    else if ($3 <= 35)
+        group = "19-35";
+    else if ($3 <= 50)
+        group = "36-50";
+    else
+        group = "51+";
 
-# Συνάρτηση: Υπολογισμός ποσοστών διάσωσης ανά ηλικιακή ομάδα
-calculate_rescue_percentages() {
-  local input_file="passengers.csv"
-  local output_file="percentages.txt"
+    print $2 " (Ηλικία: " $3 ") -> Ομάδα: " group >> "'$AGE_GROUP_FILE'"
+}' "$INPUT_FILE"
 
-  awk -F';' '{
+# Υπολογισμός ποσοστών διάσωσης ανά ηλικιακή ομάδα
+echo "Υπολογισμός ποσοστών διάσωσης..."
+awk -F';' '{
     if ($3 <= 18) { total_18++; if ($6 == "Yes") rescued_18++ }
     else if ($3 <= 35) { total_35++; if ($6 == "Yes") rescued_35++ }
     else if ($3 <= 50) { total_50++; if ($6 == "Yes") rescued_50++ }
     else { total_51++; if ($6 == "Yes") rescued_51++ }
-  }
-  END {
-    print "0-18: " (rescued_18/total_18)*100 "%" > "'$output_file'"
-    print "19-35: " (rescued_35/total_35)*100 "%" >> "'$output_file'"
-    print "36-50: " (rescued_50/total_50)*100 "%" >> "'$output_file'"
-    print "51+: " (rescued_51/total_51)*100 "%" >> "'$output_file'"
-  }' "$input_file"
 }
+END {
+    print "0-18: " (rescued_18/total_18)*100 "%" > "'$PERCENTAGE_FILE'"
+    print "19-35: " (rescued_35/total_35)*100 "%" >> "'$PERCENTAGE_FILE'"
+    print "36-50: " (rescued_50/total_50)*100 "%" >> "'$PERCENTAGE_FILE'"
+    print "51+: " (rescued_51/total_51)*100 "%" >> "'$PERCENTAGE_FILE'"
+}' "$INPUT_FILE"
 
-# Συνάρτηση: Υπολογισμός μέσης ηλικίας ανά κατηγορία
-calculate_average_age() {
-  local input_file="passengers.csv"
-  local output_file="avg.txt"
-
-  awk -F';' '{
+# Υπολογισμός μέσης ηλικίας ανά ομάδα
+echo "Υπολογισμός μέσης ηλικίας..."
+awk -F';' '{
     if ($3 <= 18) { sum_18+=$3; count_18++ }
     else if ($3 <= 35) { sum_35+=$3; count_35++ }
     else if ($3 <= 50) { sum_50+=$3; count_50++ }
     else { sum_51+=$3; count_51++ }
-  }
-  END {
-    print "0-18: " sum_18/count_18 > "'$output_file'"
-    print "19-35: " sum_35/count_35 >> "'$output_file'"
-    print "36-50: " sum_50/count_50 >> "'$output_file'"
-    print "51+: " sum_51/count_51 >> "'$output_file'"
-  }' "$input_file"
 }
+END {
+    print "0-18: " sum_18/count_18 > "'$AVERAGE_FILE'"
+    print "19-35: " sum_35/count_35 >> "'$AVERAGE_FILE'"
+    print "36-50: " sum_50/count_50 >> "'$AVERAGE_FILE'"
+    print "51+: " sum_51/count_51 >> "'$AVERAGE_FILE'"
+}' "$INPUT_FILE"
 
-# Συνάρτηση: Δημιουργία αναφορών
-generate_reports() {
-  echo "Δημιουργία αναφορών..."
-  
-  generate_age_groups
-  calculate_rescue_percentages
-  calculate_average_age
+# Φιλτράρισμα διασωθέντων
+echo "Δημιουργία αρχείου διασωθέντων..."
+grep ";Yes$" "$INPUT_FILE" > "$RESCUED_FILE"
 
-  echo "Οι αναφορές δημιουργήθηκαν!"
-}
-
-# Έλεγχος argument
-if [ "$1" == "reports" ]; then
-  generate_reports
-else
-  echo "Άγνωστη επιλογή: $1"
-  echo "Χρήση: ./processes_ipc.sh reports"
-fi
+# Μήνυμα ολοκλήρωσης
+echo "Οι αναφορές δημιουργήθηκαν!"
+echo "Αρχεία:"
+echo "  - Ηλικιακές ομάδες: $AGE_GROUP_FILE"
+echo "  - Ποσοστά διάσωσης: $PERCENTAGE_FILE"
+echo "  - Μέσες ηλικίες: $AVERAGE_FILE"
+echo "  - Διασωθέντες: $RESCUED_FILE"
