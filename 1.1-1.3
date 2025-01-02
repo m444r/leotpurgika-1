@@ -1,5 +1,3 @@
-#!/bin/bash
-
 DATA_FILE="passengers.csv"
 
 # Δημιουργία αρχείου αν δεν υπάρχει
@@ -21,7 +19,7 @@ function input_data() {
     else
         # Αν δεν δοθεί αρχείο, ζητάει δεδομένα από το πληκτρολόγιο
         echo "Δεν δόθηκε έγκυρο αρχείο. Εισαγάγετε δεδομένα από το πληκτρολόγιο."
-        echo "Εισάγετε τα στοιχεία με τη μορφή: [code],[fullname],[age],[country],[status],[rescued]"
+        echo "Εισάγετε τα στοιχεία με τη μορφή: [code];[fullname];[age];[country];[status];[rescued]"
         echo "Πατήστε Ctrl+D για να ολοκληρώσετε την εισαγωγή."
         while IFS= read -r line; do
             echo "$line" >> "$DATA_FILE"
@@ -44,17 +42,21 @@ function display_passenger() {
     fi
 }
 
+
 # Λειτουργία: Ενημέρωση στοιχείων
 function update_field() {
     echo "Εισάγετε το όνομα/κωδικό του επιβάτη:"
     read search_key
-    echo "Εισάγετε πεδίο:νέα τιμή (π.χ. fullname:John Doe):"
-    read field_arg
 
-    local field=$(echo "$field_arg" | cut -d':' -f1)
-    local new_value=$(echo "$field_arg" | cut -d':' -f2-)
+    # Ελέγχει αν το search_key είναι αριθμός ή κείμενο
+    if [[ "$search_key" =~ ^[0-9]+$ ]]; then
+        # Αν είναι αριθμός, αναζητά βάσει του code
+        old_record=$(awk -F';' -v code="$search_key" '$1 == code {print}' "$DATA_FILE")
+    else
+        # Αν είναι κείμενο, αναζητά βάσει του fullname
+        old_record=$(awk -F';' -v name="$search_key" '$2 ~ name {print}' "$DATA_FILE") 
+    fi
 
-    old_record=$(grep -i "$search_key" "$DATA_FILE")
     if [[ -z "$old_record" ]]; then
         echo "Ο επιβάτης δεν βρέθηκε."
         return
@@ -62,22 +64,29 @@ function update_field() {
 
     echo "Παλαιά εγγραφή: $old_record"
 
+    echo "Εισάγετε πεδίο:νέα τιμή (π.χ. fullname:John Doe):"
+    read field_arg
+
+    local field=$(echo "$field_arg" | cut -d':' -f1)
+    local new_value=$(echo "$field_arg" | cut -d':' -f2-)
+
+    # Δημιουργία νέας εγγραφής
+    local new_record
     case "$field" in
-    code) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$1=val; print}') ;;
-    fullname) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$2=val; print}') ;;
-    age) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$3=val; print}') ;;
-    country) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$4=val; print}') ;;
-    status) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$5=val; print}') ;;
-    rescued) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$6=val; print}') ;;
-    record) new_record="$new_value" ;;
-    *) echo "Μη έγκυρο πεδίο."; return ;;
-esac
-
-
+        code) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$1=val; print}') ;;
+        fullname) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$2=val; print}') ;;
+        age) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$3=val; print}') ;;
+        country) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$4=val; print}') ;;
+        status) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$5=val; print}') ;;
+        rescued) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$6=val; print}') ;;
+        record) new_record="$new_value" ;;
+        *) echo "Μη έγκυρο πεδίο."; return ;;
+    esac
 
     sed -i "s|$old_record|$new_record|" "$DATA_FILE"
     echo "Ενημερωμένη εγγραφή: $new_record"
 }
+
 
 # Μενού
 while true; do
@@ -97,3 +106,4 @@ while true; do
         *) echo "Μη έγκυρη επιλογή." ;;
     esac
 done
+
