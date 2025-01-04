@@ -1,0 +1,132 @@
+#!/bin/bash
+
+DATA_FILE="passengers.csv"
+
+# Δημιουργία αρχείου αν δεν υπάρχει
+if [[ ! -f "$DATA_FILE" ]]; then
+    echo "Δημιουργία νέου αρχείου $DATA_FILE..."
+    touch "$DATA_FILE"
+fi
+
+# Λειτουργία: Εισαγωγή δεδομένων
+function input_data() {
+   echo "Εισάγετε το όνομα του αρχείου (συμπεριλαμβανομένου του path) ή πατήστε Enter για εισαγωγή από πληκτρολόγιο:"
+    read input_file
+
+    if [[ -n "$input_file" && -f "$input_file" ]]; then
+        # Αν δοθεί αρχείο και υπάρχει, προσθέτει τα δεδομένα στο αρχείο passengers.csv
+        echo "Το αρχείο βρέθηκε. Επεξεργασία δεδομένων..."
+        cat "$input_file" >> "$DATA_FILE"
+        echo "Τα δεδομένα αποθηκεύτηκαν στο $DATA_FILE."
+    else
+        # Αν δεν δοθεί αρχείο, ζητάει δεδομένα από το πληκτρολόγιο
+        echo "Δεν δόθηκε έγκυρο αρχείο. Εισαγάγετε δεδομένα από το πληκτρολόγιο."
+        echo "Εισάγετε τα στοιχεία με τη μορφή: [code],[fullname],[age],[country],[status],[rescued]"
+        echo "Πατήστε Ctrl+D για να ολοκληρώσετε την εισαγωγή."
+        while IFS= read -r line; do
+            echo "$line" >> "$DATA_FILE"
+        done
+        echo "Τα δεδομένα αποθηκεύτηκαν στο $DATA_FILE."
+    fi
+}
+
+
+# Λειτουργία: Αναζήτηση επιβάτη
+function display_passenger() {
+    echo "Εισάγετε το όνομα/κωδικό για αναζήτηση:"
+    read search_term
+    result=$(grep -i "$search_term" "$DATA_FILE")
+    if [[ -n "$result" ]]; then
+        echo "Βρέθηκαν τα εξής αποτελέσματα:"
+        echo "$result"
+    else
+        echo "Δεν βρέθηκε επιβάτης."
+    fi
+}
+
+# Λειτουργία: Ενημέρωση στοιχείων
+function update_field() {
+    echo "Εισάγετε το όνομα/κωδικό του επιβάτη:"
+    read search_key
+    echo "Εισάγετε πεδίο:νέα τιμή (π.χ. fullname:John Doe):"
+    read field_arg
+
+    local field=$(echo "$field_arg" | cut -d':' -f1)
+    local new_value=$(echo "$field_arg" | cut -d':' -f2-)
+
+    old_record=$(grep -i "$search_key" "$DATA_FILE")
+    if [[ -z "$old_record" ]]; then
+        echo "Ο επιβάτης δεν βρέθηκε."
+        return
+    fi
+
+    echo "Παλαιά εγγραφή: $old_record"
+
+    case "$field" in
+    code) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$1=val; print}') ;;
+    fullname) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$2=val; print}') ;;
+    age) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$3=val; print}') ;;
+    country) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$4=val; print}') ;;
+    status) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$5=val; print}') ;;
+    rescued) new_record=$(echo "$old_record" | awk -F';' -v val="$new_value" 'BEGIN{OFS=";"}{$6=val; print}') ;;
+    record) new_record="$new_value" ;;
+    *) echo "Μη έγκυρο πεδίο."; return ;;
+esac
+
+
+
+    sed -i "s|$old_record|$new_record|" "$DATA_FILE"
+    echo "Ενημερωμένη εγγραφή: $new_record"
+}
+
+# προβολή αρχείου που σταματά όταν γεμίσει η οθόνη
+function display_file_paginated_auto() {
+    local screen_height=$(tput lines)  # Υπολογίζει τις γραμμές της οθόνης
+    local current_line=0               # Μετρητής γραμμών
+
+    echo "Προβολή όλων των εγγραφών από το αρχείο $DATA_FILE"
+    
+    if [[ -f "$DATA_FILE" ]]; then
+        while IFS= read -r line; do
+            echo "$line"
+            ((current_line++))
+
+            # Ελέγχει αν γεμίζει η οθόνη
+            if (( current_line % (screen_height - 1) == 0 )); then
+                echo -n "Πατήστε <space> για συνέχεια ή <e> για έξοδο: "
+                read -n 1 user_input
+                echo ""
+
+                if [[ "$user_input" == "e" ]]; then
+                    echo "Τερματισμός Λειτουργίας"
+                    break
+                fi
+            fi
+        done < "$DATA_FILE"
+    else
+        echo "Το αρχείο $DATA_FILE δεν υπάρχει ή είναι κενό."
+    fi
+}
+
+
+# Μενού
+while true; do
+    echo "==================="
+    echo "1. Εισαγωγή Δεδομένων"
+    echo "2. Αναζήτηση Επιβάτη"
+    echo "3. Ενημέρωση Στοιχείων"
+    echo "4. Προβολή αρχείου
+    echo "5. Έξοδος"
+    echo "==================="
+    read -p "Επιλέξτε μια επιλογή: " choice
+
+    case $choice in
+        1) input_data ;;
+        2) display_passenger ;;
+        3) update_field ;;
+        4) display_file_paginated_auto ;;
+        5) echo "Έξοδος."; break ;;
+        *) echo "Μη έγκυρη επιλογή." ;;
+    esac
+done
+
