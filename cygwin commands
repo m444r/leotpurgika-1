@@ -1,2 +1,5 @@
 cd /cygdrive/c/Users/User/Desktop/ergasia
 ./check.sh
+
+$ gcc -pthread -o launch passenger.c launch.c
+./launch 5 1 2
