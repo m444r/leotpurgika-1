@@ -95,6 +95,7 @@ void simulate() {
                     if (allocate_memory(processes[i].pid, processes[i].memory_needed)) {
                         processes[i].in_memory = true;
                         printf("Time %d: Process %d loaded into memory.\n", current_time, processes[i].pid);
+                        current_time++;
                     }
                 }
             }
