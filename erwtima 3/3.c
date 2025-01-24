@@ -4,7 +4,7 @@
 
 #define MEMORY_SIZE 512  // Total memory in KB
 #define TIME_QUANTUM 3   // Time quantum for Round Robin
-#define PROCESS_COUNT 5 // Number of processes
+#define PROCESS_NUMBER 5 // Number of processes
 
 void initialize_memory();
 bool allocate_memory(int pid, int memory_needed);
@@ -36,7 +36,7 @@ int current_time = 0;
 int main() {
     initialize_memory();
 
-    for (int i = 0; i < PROCESS_COUNT; i++) {
+    for (int i = 0; i < PROCESS_NUMBER; i++) {
         processes[i].pid = i + 1;
         printf("\nEnter details for Process %d:\n", processes[i].pid);
         printf("Arrival Time: ");
@@ -116,7 +116,7 @@ void simulate() {
     while (1) {
         bool all_done = true;
 
-        for (int i = 0; i < PROCESS_COUNT; i++) {
+        for (int i = 0; i < PROCESS_NUMBER; i++) {
             if (processes[i].remaining_time > 0) {
                 all_done = false;
 
@@ -135,7 +135,7 @@ void simulate() {
 
         // Find the next process to run
         if (running_process == -1 || time_slice == 0) {
-            for (int i = 0; i < PROCESS_COUNT; i++) {
+            for (int i = 0; i < PROCESS_NUMBER; i++) {
                 if (processes[i].remaining_time > 0 && processes[i].in_memory) {
                     running_process = i;
                     time_slice = TIME_QUANTUM;
