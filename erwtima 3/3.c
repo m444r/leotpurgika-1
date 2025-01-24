@@ -52,6 +52,7 @@ int main() {
         processes[i].in_memory = false;
     }
 
+
     simulate();
 
     free(memory);    // Free allocated memory for MemoryBlock
@@ -112,6 +113,8 @@ void deallocate_memory(int pid) {
     }
 }
 
+
+
 void simulate() {
     int time_slice = 0;
     int running_process = -1;
@@ -128,7 +131,6 @@ void simulate() {
                     if (allocate_memory(processes[i].pid, processes[i].memory_needed)) {
                         processes[i].in_memory = true;
                         printf("Time %d: Process %d loaded into memory.\n", current_time, processes[i].pid);
-                        current_time++;
                     }
                 }
             }
@@ -138,9 +140,11 @@ void simulate() {
 
         // Find the next process to run
         if (running_process == -1 || time_slice == 0) {
+            int start = (running_process + 1) % process_count;
             for (int i = 0; i < process_count; i++) {
-                if (processes[i].remaining_time > 0 && processes[i].in_memory) {
-                    running_process = i;
+                int index = (start + i) % process_count;
+                if (processes[index].remaining_time > 0 && processes[index].in_memory) {
+                    running_process = index;
                     time_slice = TIME_QUANTUM;
                     break;
                 }
