@@ -5,6 +5,12 @@
 #define MEMORY_SIZE 512  // Total memory in KB
 #define TIME_QUANTUM 3   // Time quantum for Round Robin
 
+void initialize_memory();
+bool allocate_memory(int pid, int memory_needed);
+void deallocate_memory(int pid);
+void simulate();
+
+
 typedef struct {
     int pid;
     int arrival_time;
@@ -25,6 +31,35 @@ MemoryBlock *memory;
 Process *processes;
 int process_count = 0;
 int current_time = 0;
+
+
+int main() {
+    initialize_memory();
+
+    printf("Enter number of processes: ");
+    scanf("%d", &process_count);
+
+    processes = (Process *)calloc(process_count, sizeof(Process));
+
+    for (int i = 0; i < process_count; i++) {
+        processes[i].pid = i + 1;
+        printf("\nEnter details for Process %d:\n", processes[i].pid);
+        printf("Arrival Time: ");
+        scanf("%d", &processes[i].arrival_time);
+        printf("Burst Time: ");
+        scanf("%d", &processes[i].burst_time);
+        processes[i].remaining_time = processes[i].burst_time;
+        printf("Memory Needed (KB): ");
+        scanf("%d", &processes[i].memory_needed);
+        processes[i].in_memory = false;
+    }
+
+    simulate();
+
+    free(memory);    // Free allocated memory for MemoryBlock
+    free(processes); // Free allocated memory for Process
+    return 0;
+}
 
 void initialize_memory() {
     memory = (MemoryBlock *)calloc(MEMORY_SIZE, sizeof(MemoryBlock));
@@ -131,33 +166,5 @@ void simulate() {
 
         current_time++;
     }
-}
-
-int main() {
-    initialize_memory();
-
-    printf("Enter number of processes: ");
-    scanf("%d", &process_count);
-
-    processes = (Process *)calloc(process_count, sizeof(Process));
-
-    for (int i = 0; i < process_count; i++) {
-        processes[i].pid = i + 1;
-        printf("\nEnter details for Process %d:\n", processes[i].pid);
-        printf("Arrival Time: ");
-        scanf("%d", &processes[i].arrival_time);
-        printf("Burst Time: ");
-        scanf("%d", &processes[i].burst_time);
-        processes[i].remaining_time = processes[i].burst_time;
-        printf("Memory Needed (KB): ");
-        scanf("%d", &processes[i].memory_needed);
-        processes[i].in_memory = false;
-    }
-
-    simulate();
-
-    free(memory);    // Free allocated memory for MemoryBlock
-    free(processes); // Free allocated memory for Process
-    return 0;
 }
 
